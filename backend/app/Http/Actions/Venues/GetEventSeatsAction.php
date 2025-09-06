@@ -6,7 +6,6 @@ namespace HiEvents\Http\Actions\Venues;
 
 use HiEvents\Http\Actions\BaseAction;
 use HiEvents\Models\Event;
-use HiEvents\Models\Seat;
 use HiEvents\Models\SeatReservation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,43 +14,58 @@ class GetEventSeatsAction extends BaseAction
 {
     public function __invoke(Request $request, int $eventId): JsonResponse
     {
-        $event = Event::with(['venue.seats' => function ($query) {
-            $query->where('is_active', true);
-        }])
-        ->findOrFail($eventId);
+        $event = Event::with('venue')
+            ->findOrFail($eventId);
 
         if (!$event->venue || !$event->enable_seating_chart) {
             return $this->success([
-                'seats' => [],
+                'zones' => [],
                 'venue' => null,
                 'seating_enabled' => false
             ]);
         }
 
-        // Get seat availability for this event
-        $seats = $event->venue->seats->map(function (Seat $seat) use ($eventId) {
-            $reservation = $seat->seat_reservations()
-                ->where('event_id', $eventId)
-                ->active()
-                ->first();
+        $layoutConfig = $event->venue->layout_config ?? [];
+        
+        if (!isset($layoutConfig['zones']) || !is_array($layoutConfig['zones'])) {
+            return $this->success([
+                'zones' => [],
+                'venue' => null,
+                'seating_enabled' => false
+            ]);
+        }
+
+        // Get zone availability for this event
+        $zones = collect($layoutConfig['zones'])->map(function ($zone, $index) use ($eventId) {
+            // Count reservations for this zone
+            $reservedCount = SeatReservation::where('event_id', $eventId)
+                ->where('zone_identifier', "zone_{$index}")
+                ->whereIn('status', ['reserved', 'sold'])
+                ->count();
+
+            $heldCount = SeatReservation::where('event_id', $eventId)
+                ->where('zone_identifier', "zone_{$index}")
+                ->where('status', 'held')
+                ->where('expires_at', '>', now())
+                ->count();
+
+            $totalReserved = $reservedCount + $heldCount;
+            $availableCapacity = max(0, ($zone['capacity'] ?? 0) - $totalReserved);
 
             return [
-                'id' => $seat->id,
-                'seat_identifier' => $seat->seat_identifier,
-                'section' => $seat->section,
-                'row' => $seat->row,
-                'seat_number' => $seat->seat_number,
-                'x_position' => $seat->x_position,
-                'y_position' => $seat->y_position,
-                'price' => $seat->price,
-                'seat_type' => $seat->seat_type,
-                'is_available' => !$reservation,
-                'status' => $reservation ? $reservation->status : 'available'
+                'id' => "zone_{$index}",
+                'name' => $zone['name'] ?? "Zone " . ($index + 1),
+                'capacity' => $zone['capacity'] ?? 0,
+                'available_capacity' => $availableCapacity,
+                'price' => $zone['price'] ?? 0,
+                'color' => $zone['color'] ?? '#4CAF50',
+                'reserved_count' => $reservedCount,
+                'held_count' => $heldCount
             ];
-        });
+        })->values();
 
         return $this->success([
-            'seats' => $seats,
+            'zones' => $zones,
             'venue' => [
                 'id' => $event->venue->id,
                 'name' => $event->venue->name,

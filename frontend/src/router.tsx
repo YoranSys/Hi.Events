@@ -114,6 +114,13 @@ export const router: RouteObject[] = [
                     return {Component: ConfirmEmailAddress.default};
                 }
             },
+            {
+                path: "venues",
+                async lazy() {
+                    const VenueManagement = await import("./components/routes/venue");
+                    return {Component: VenueManagement.VenueManagement};
+                }
+            },
         ]
     },
     {

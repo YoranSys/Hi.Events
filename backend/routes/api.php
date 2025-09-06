@@ -45,6 +45,9 @@ use HiEvents\Http\Actions\CheckInLists\UpdateCheckInListAction;
 use HiEvents\Http\Actions\Common\GetColorThemesAction;
 use HiEvents\Http\Actions\Common\Webhooks\StripeIncomingWebhookAction;
 use HiEvents\Http\Actions\Venues\GetVenuesAction;
+use HiEvents\Http\Actions\Venues\GetVenueAction;
+use HiEvents\Http\Actions\Venues\CreateVenueAction;
+use HiEvents\Http\Actions\Venues\UpdateVenueAction;
 use HiEvents\Http\Actions\Venues\GetEventSeatsAction;
 use HiEvents\Http\Actions\Venues\ReserveSeatsAction;
 use HiEvents\Http\Actions\Events\CreateEventAction;
@@ -335,6 +338,9 @@ $router->middleware(['auth:api'])->group(
 
         // Venues
         $router->get('/venues', GetVenuesAction::class);
+        $router->post('/venues', CreateVenueAction::class);
+        $router->get('/venues/{venue_id}', GetVenueAction::class);
+        $router->put('/venues/{venue_id}', UpdateVenueAction::class);
     }
 );
 

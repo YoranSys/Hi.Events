@@ -1,15 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { seatingClientPublic } from "../api/seating.client";
 
-export const useReserveSeats = () => {
+export const useReserveZones = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ eventId, data }: { eventId: number; data: { seat_ids: number[]; session_identifier: string } }) =>
-            seatingClientPublic.reserveSeats(eventId, data),
+        mutationFn: ({ eventId, data }: { 
+            eventId: number; 
+            data: { 
+                zone_selections: Array<{ zone_id: string; quantity: number }>; 
+                session_identifier: string 
+            } 
+        }) =>
+            seatingClientPublic.reserveZones(eventId, data),
         onSuccess: (data, variables) => {
-            // Invalidate and refetch seat data to show updated availability
-            queryClient.invalidateQueries({ queryKey: ['event-seats', variables.eventId] });
+            // Invalidate and refetch zone data to show updated availability
+            queryClient.invalidateQueries({ queryKey: ['event-zones', variables.eventId] });
         },
     });
 };

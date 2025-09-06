@@ -5,24 +5,31 @@ import { SeatingChart } from '../routes/product-widget/SeatingChart';
 import { useState } from 'react';
 import { notifications } from '@mantine/notifications';
 
+interface ZoneSelection {
+    zone_id: string;
+    quantity: number;
+}
+
 export const SeatingChartDemo = () => {
     const { eventId } = useParams();
-    const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+    const [selectedZones, setSelectedZones] = useState<ZoneSelection[]>([]);
     const { data: event, isLoading } = useGetEventPublic(Number(eventId));
 
     const handleProceedToCheckout = () => {
-        if (selectedSeats.length === 0) {
+        if (selectedZones.length === 0) {
             notifications.show({
-                title: 'No Seats Selected',
-                message: 'Please select at least one seat to continue',
+                title: 'No Zones Selected',
+                message: 'Please select at least one zone to continue',
                 color: 'orange',
             });
             return;
         }
 
+        const totalTickets = selectedZones.reduce((sum, zone) => sum + zone.quantity, 0);
+
         notifications.show({
             title: 'Demo Mode',
-            message: `Would proceed to checkout with ${selectedSeats.length} selected seat(s)`,
+            message: `Would proceed to checkout with ${totalTickets} ticket(s) from ${selectedZones.length} zone(s)`,
             color: 'blue',
         });
     };
@@ -46,30 +53,32 @@ export const SeatingChartDemo = () => {
     // For demo purposes, enable seating chart even if not set in the event
     const demoEvent = { ...event, enable_seating_chart: true };
 
+    const totalTickets = selectedZones.reduce((sum, zone) => sum + zone.quantity, 0);
+
     return (
         <Container size="lg" py="xl">
-            <Title order={1} mb="xl">Seating Chart Demo</Title>
+            <Title order={1} mb="xl">Zone-Based Seating Demo</Title>
             
             <Box mb="xl">
                 <Text size="lg" mb="md">Event: {event.title}</Text>
                 <Text c="dimmed" mb="lg">
-                    This demo shows the interactive seating chart functionality. Click on seats to select them.
+                    This demo shows the simplified zone-based seating functionality. Select zones and quantities to reserve tickets.
                 </Text>
             </Box>
 
             <SeatingChart
                 event={demoEvent}
-                onSeatsSelected={setSelectedSeats}
-                selectedSeats={selectedSeats}
+                onSeatsSelected={setSelectedZones}
+                selectedSeats={selectedZones}
             />
 
             <Group justify="center" mt="xl">
                 <Button
                     size="lg"
                     onClick={handleProceedToCheckout}
-                    disabled={selectedSeats.length === 0}
+                    disabled={totalTickets === 0}
                 >
-                    Proceed to Checkout ({selectedSeats.length} seats)
+                    Proceed to Checkout ({totalTickets} tickets)
                 </Button>
             </Group>
         </Container>

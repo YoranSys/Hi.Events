@@ -15,12 +15,15 @@ class SeatReservation extends BaseModel
         'session_identifier',
         'status',
         'expires_at',
+        'zone_identifier',
+        'price',
     ];
 
     protected function getCastMap(): array
     {
         return [
             'expires_at' => 'datetime',
+            'price' => 'float',
         ];
     }
 

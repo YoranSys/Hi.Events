@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Group, Text, Badge, Alert, LoadingOverlay } from '@mantine/core';
+import { Box, Button, Group, Text, Badge, Alert, LoadingOverlay, NumberInput, Card, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconCheck, IconX } from '@tabler/icons-react';
+import { IconCheck, IconX, IconMapPin } from '@tabler/icons-react';
 import { Event } from '../../../../types';
 import { getSessionIdentifier } from '../../../../utilites/sessionIdentifier';
 import { useGetEventSeats } from '../../../../queries/useGetEventSeats';
-import { useReserveSeats } from '../../../../mutations/useReserveSeats';
+import { useReserveZones } from '../../../../mutations/useReserveSeats';
 
-interface Seat {
-    id: number;
-    seat_identifier: string;
-    section?: string;
-    row?: string;
-    seat_number?: string;
-    x_position: number;
-    y_position: number;
+interface Zone {
+    id: string;
+    name: string;
+    capacity: number;
+    available_capacity: number;
     price: number;
-    seat_type: string;
-    is_available: boolean;
-    status: string;
+    color: string;
+    reserved_count: number;
+    held_count: number;
 }
 
 interface Venue {
@@ -28,79 +25,86 @@ interface Venue {
 }
 
 interface SeatingChartData {
-    seats: Seat[];
+    zones: Zone[];
     venue: Venue | null;
     seating_enabled: boolean;
 }
 
-interface SeatingChartProps {
-    event: Event;
-    onSeatsSelected: (seatIds: number[]) => void;
-    selectedSeats: number[];
+interface ZoneSelection {
+    zone_id: string;
+    quantity: number;
 }
 
-const SEAT_COLORS = {
-    available: '#4CAF50',
-    selected: '#2196F3',
-    held: '#FF9800',
-    reserved: '#f44336',
-    sold: '#757575'
-};
+interface SeatingChartProps {
+    event: Event;
+    onSeatsSelected: (selections: ZoneSelection[]) => void;
+    selectedSeats: ZoneSelection[];
+}
 
 export const SeatingChart: React.FC<SeatingChartProps> = ({
     event,
     onSeatsSelected,
     selectedSeats
 }) => {
-    const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>(selectedSeats);
+    const [zoneSelections, setZoneSelections] = useState<ZoneSelection[]>(selectedSeats);
     const [reservationExpiry, setReservationExpiry] = useState<Date | null>(null);
 
     const { data: seatingData, isLoading: loading, error } = useGetEventSeats(event.id);
-    const reserveSeatsMutation = useReserveSeats();
+    const reserveZonesMutation = useReserveZones();
 
     useEffect(() => {
-        setSelectedSeatIds(selectedSeats);
+        setZoneSelections(selectedSeats);
     }, [selectedSeats]);
 
-    const reserveSeats = async () => {
-        if (selectedSeatIds.length === 0) return;
+    const reserveZones = async () => {
+        if (zoneSelections.length === 0) return;
 
         try {
-            const result = await reserveSeatsMutation.mutateAsync({
+            const result = await reserveZonesMutation.mutateAsync({
                 eventId: event.id,
                 data: {
-                    seat_ids: selectedSeatIds,
+                    zone_selections: zoneSelections,
                     session_identifier: getSessionIdentifier()
                 }
             });
 
             setReservationExpiry(new Date(result.expires_at));
             notifications.show({
-                title: 'Seats Reserved',
-                message: `${selectedSeatIds.length} seat(s) reserved for 15 minutes`,
+                title: 'Zones Reserved',
+                message: `${result.total_tickets} ticket(s) reserved for 15 minutes`,
                 color: 'green',
                 icon: <IconCheck size="1rem" />
             });
         } catch (error: any) {
             notifications.show({
                 title: 'Reservation Failed',
-                message: error.response?.data?.message || 'Failed to reserve seats',
+                message: error.response?.data?.message || 'Failed to reserve zones',
                 color: 'red',
                 icon: <IconX size="1rem" />
             });
         }
     };
 
-    const handleSeatClick = (seat: Seat) => {
-        if (!seat.is_available) return;
+    const handleQuantityChange = (zoneId: string, quantity: number) => {
+        const existingSelections = zoneSelections.filter(s => s.zone_id !== zoneId);
+        const newSelections = quantity > 0 
+            ? [...existingSelections, { zone_id: zoneId, quantity }]
+            : existingSelections;
 
-        const isSelected = selectedSeatIds.includes(seat.id);
-        const newSelectedSeats = isSelected
-            ? selectedSeatIds.filter(id => id !== seat.id)
-            : [...selectedSeatIds, seat.id];
+        setZoneSelections(newSelections);
+        onSeatsSelected(newSelections);
+    };
 
-        setSelectedSeatIds(newSelectedSeats);
-        onSeatsSelected(newSelectedSeats);
+    const getTotalTickets = () => {
+        return zoneSelections.reduce((sum, selection) => sum + selection.quantity, 0);
+    };
+
+    const getTotalPrice = () => {
+        if (!seatingData?.zones) return 0;
+        return zoneSelections.reduce((sum, selection) => {
+            const zone = seatingData.zones.find(z => z.id === selection.zone_id);
+            return sum + ((zone?.price || 0) * selection.quantity);
+        }, 0);
     };
 
     if (loading) {
@@ -115,142 +119,112 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
         return null; // Fall back to regular product selection
     }
 
-    const { seats, venue } = seatingData;
-
-    // Simple SVG seating layout
-    const svgWidth = 600;
-    const svgHeight = 400;
+    const { zones, venue } = seatingData;
 
     return (
         <Box>
-            <Text size="lg" fw={600} mb="md">
-                Select Your Seats - {venue.name}
-            </Text>
+            <Group mb="md">
+                <IconMapPin size="1.2rem" />
+                <Text size="lg" fw={600}>
+                    Select Zones - {venue.name}
+                </Text>
+            </Group>
 
             {reservationExpiry && (
                 <Alert mb="md" color="blue">
-                    Your seat selection expires at {reservationExpiry.toLocaleTimeString()}
+                    Your zone selection expires at {reservationExpiry.toLocaleTimeString()}
                 </Alert>
             )}
 
-            <Box mb="md">
-                <Group>
-                    {Object.entries(SEAT_COLORS).map(([status, color]) => (
-                        <Group key={status} gap={5}>
-                            <Box
-                                w={16}
-                                h={16}
-                                style={{
-                                    backgroundColor: color,
-                                    borderRadius: 2,
-                                    border: '1px solid #ccc'
-                                }}
-                            />
-                            <Text size="sm" c="dimmed" tt="capitalize">{status}</Text>
-                        </Group>
-                    ))}
-                </Group>
-            </Box>
+            <Stack gap="md" mb="lg">
+                {zones.map((zone) => {
+                    const currentSelection = zoneSelections.find(s => s.zone_id === zone.id);
+                    const selectedQuantity = currentSelection?.quantity || 0;
+                    const isAvailable = zone.available_capacity > 0;
 
-            <Box
-                style={{
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    marginBottom: 16
-                }}
-            >
-                <svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
-                    {/* Stage indicator */}
-                    <rect
-                        x={svgWidth * 0.2}
-                        y={20}
-                        width={svgWidth * 0.6}
-                        height={40}
-                        fill="#f0f0f0"
-                        stroke="#ccc"
-                        rx={5}
-                    />
-                    <text
-                        x={svgWidth / 2}
-                        y={45}
-                        textAnchor="middle"
-                        fontSize="14"
-                        fill="#666"
-                    >
-                        STAGE
-                    </text>
+                    return (
+                        <Card 
+                            key={zone.id} 
+                            withBorder 
+                            style={{ 
+                                borderColor: isAvailable ? zone.color : '#ccc',
+                                opacity: isAvailable ? 1 : 0.7
+                            }}
+                        >
+                            <Group justify="space-between" align="flex-start">
+                                <Box style={{ flex: 1 }}>
+                                    <Group mb="xs">
+                                        <Box
+                                            w={16}
+                                            h={16}
+                                            style={{
+                                                backgroundColor: isAvailable ? zone.color : '#ccc',
+                                                borderRadius: 4,
+                                                border: '1px solid #ddd'
+                                            }}
+                                        />
+                                        <Text fw={500} size="lg">{zone.name}</Text>
+                                        <Badge variant="light" color={isAvailable ? 'green' : 'red'}>
+                                            {zone.available_capacity} / {zone.capacity} available
+                                        </Badge>
+                                    </Group>
+                                    
+                                    <Text size="sm" c="dimmed" mb="xs">
+                                        Price: ${zone.price.toFixed(2)} per ticket
+                                    </Text>
+                                    
+                                    {selectedQuantity > 0 && (
+                                        <Text size="sm" fw={500} c="blue">
+                                            Selected: {selectedQuantity} tickets (${(zone.price * selectedQuantity).toFixed(2)})
+                                        </Text>
+                                    )}
+                                </Box>
 
-                    {/* Render seats */}
-                    {seats.map((seat) => {
-                        const isSelected = selectedSeatIds.includes(seat.id);
-                        let seatColor = SEAT_COLORS.available;
-                        
-                        if (!seat.is_available) {
-                            seatColor = seat.status === 'held' ? SEAT_COLORS.held : SEAT_COLORS.sold;
-                        } else if (isSelected) {
-                            seatColor = SEAT_COLORS.selected;
-                        }
+                                <Box style={{ minWidth: 120 }}>
+                                    <NumberInput
+                                        label="Quantity"
+                                        placeholder="0"
+                                        min={0}
+                                        max={zone.available_capacity}
+                                        value={selectedQuantity}
+                                        onChange={(value) => handleQuantityChange(zone.id, Number(value) || 0)}
+                                        disabled={!isAvailable}
+                                        size="sm"
+                                    />
+                                </Box>
+                            </Group>
+                        </Card>
+                    );
+                })}
+            </Stack>
 
-                        // Scale positions to fit SVG
-                        const x = (seat.x_position || Math.random()) * svgWidth;
-                        const y = (seat.y_position || 100 + Math.random() * 200) + 80;
-
-                        return (
-                            <g key={seat.id}>
-                                <circle
-                                    cx={x}
-                                    cy={y}
-                                    r={8}
-                                    fill={seatColor}
-                                    stroke="#333"
-                                    strokeWidth={1}
-                                    style={{
-                                        cursor: seat.is_available ? 'pointer' : 'not-allowed',
-                                        opacity: seat.is_available ? 1 : 0.6
-                                    }}
-                                    onClick={() => handleSeatClick(seat)}
-                                />
-                                <text
-                                    x={x}
-                                    y={y + 3}
-                                    textAnchor="middle"
-                                    fontSize="8"
-                                    fill="white"
-                                    style={{ pointerEvents: 'none' }}
-                                >
-                                    {seat.seat_number || seat.id}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </svg>
-            </Box>
-
-            <Group justify="space-between">
-                <Text size="sm" c="dimmed">
-                    {selectedSeatIds.length} seat(s) selected
-                </Text>
+            <Group justify="space-between" align="center" p="md" style={{ backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <Box>
+                    <Text size="sm" c="dimmed">Total Selection</Text>
+                    <Text fw={600}>
+                        {getTotalTickets()} ticket(s) - ${getTotalPrice().toFixed(2)}
+                    </Text>
+                </Box>
                 
-                {selectedSeatIds.length > 0 && (
-                    <Button onClick={reserveSeats}>
-                        Reserve Selected Seats
+                {getTotalTickets() > 0 && (
+                    <Button 
+                        onClick={reserveZones}
+                        loading={reserveZonesMutation.isPending}
+                    >
+                        Reserve Selected Zones
                     </Button>
                 )}
             </Group>
 
-            {selectedSeatIds.length > 0 && (
+            {zoneSelections.length > 0 && (
                 <Box mt="md">
-                    <Text size="sm" fw={500} mb="xs">Selected Seats:</Text>
+                    <Text size="sm" fw={500} mb="xs">Selected Zones:</Text>
                     <Group>
-                        {selectedSeatIds.map(seatId => {
-                            const seat = seats.find(s => s.id === seatId);
-                            return seat ? (
-                                <Badge key={seatId} variant="light">
-                                    {seat.section ? `${seat.section}-` : ''}
-                                    {seat.row ? `${seat.row}-` : ''}
-                                    {seat.seat_number || seat.seat_identifier}
-                                    {seat.price > 0 && ` - $${seat.price.toFixed(2)}`}
+                        {zoneSelections.map(selection => {
+                            const zone = zones.find(z => z.id === selection.zone_id);
+                            return zone ? (
+                                <Badge key={selection.zone_id} variant="light" size="lg">
+                                    {zone.name}: {selection.quantity} tickets
                                 </Badge>
                             ) : null;
                         })}
