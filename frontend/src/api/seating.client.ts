@@ -1,5 +1,5 @@
 import { GenericDataType } from "../types";
-import api from "./api.client.ts";
+import {api} from "./client";
 
 interface Seat {
     id: number;
