@@ -426,7 +426,7 @@ const SelectProducts = (props: SelectProductsProps) => {
                     <Input type={'hidden'} {...form.getInputProps('affiliate_code')} />
                     
                     {/* Seating Chart Button */}
-                    {seatingZones && seatingZones.length > 0 && (
+                    {seatingZones && seatingZones.length > 0 && event?.settings?.venue_map_image_url && (
                         <div className={'hi-seating-chart-section'} style={{ 
                             marginBottom: '24px',
                             padding: '16px',
@@ -660,7 +660,7 @@ const SelectProducts = (props: SelectProductsProps) => {
             }
             
             {/* Seating Chart Modal */}
-            {showSeatingChart && seatingZones && seatingZones.length > 0 && (
+            {showSeatingChart && seatingZones && seatingZones.length > 0 && event?.settings?.venue_map_image_url && (
                 <Modal
                     opened={showSeatingChart}
                     onClose={() => setShowSeatingChart(false)}
@@ -677,7 +677,7 @@ const SelectProducts = (props: SelectProductsProps) => {
                     }}
                 >
                     <InteractiveSeatingChart
-                        imageUrl={event?.settings?.venue_map_image_url || ''}
+                        imageUrl={event.settings.venue_map_image_url}
                         zones={seatingZones}
                         onZoneSelected={handleZoneSelected}
                         selectedProductId={selectedProductIdFromZone || undefined}

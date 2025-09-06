@@ -21,8 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
-            $table->foreign('product_id')->references('products')
-                  ->references('id')->on('products')->onDelete('cascade');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             
             $table->index(['event_id']);
             $table->index(['product_id']);

@@ -193,8 +193,11 @@ export const PolygonDrawer: React.FC<PolygonDrawerProps> = ({
         const image = imageRef.current;
         if (!canvas || !image) return;
 
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
+        // Set canvas size to match the displayed image size
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        
         draw();
     }, [draw]);
 
