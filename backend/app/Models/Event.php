@@ -81,6 +81,11 @@ class Event extends BaseModel
         return $this->hasMany(Affiliate::class);
     }
 
+    public function seating_zones(): HasMany
+    {
+        return $this->hasMany(SeatingZone::class);
+    }
+
     public static function boot(): void
     {
         parent::boot();

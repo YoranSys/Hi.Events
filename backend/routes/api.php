@@ -142,6 +142,11 @@ use HiEvents\Http\Actions\Webhooks\EditWebhookAction;
 use HiEvents\Http\Actions\Webhooks\GetWebhookAction;
 use HiEvents\Http\Actions\Webhooks\GetWebhookLogsAction;
 use HiEvents\Http\Actions\Webhooks\GetWebhooksAction;
+use HiEvents\Http\Actions\SeatingZones\CreateSeatingZoneAction;
+use HiEvents\Http\Actions\SeatingZones\DeleteSeatingZoneAction;
+use HiEvents\Http\Actions\SeatingZones\GetSeatingZonesAction;
+use HiEvents\Http\Actions\SeatingZones\GetSeatingZonesPublicAction;
+use HiEvents\Http\Actions\SeatingZones\UpdateSeatingZoneAction;
 use Illuminate\Routing\Router;
 
 /** @var Router|Router $router */
@@ -326,6 +331,12 @@ $router->middleware(['auth:api'])->group(
         // Reports
         $router->get('/events/{event_id}/reports/{report_type}', GetReportAction::class);
 
+        // Seating Zones
+        $router->get('/events/{event_id}/seating-zones', GetSeatingZonesAction::class);
+        $router->post('/events/{event_id}/seating-zones', CreateSeatingZoneAction::class);
+        $router->put('/events/{event_id}/seating-zones/{zone_id}', UpdateSeatingZoneAction::class);
+        $router->delete('/events/{event_id}/seating-zones/{zone_id}', DeleteSeatingZoneAction::class);
+
         // Images
         $router->post('/images', CreateImageAction::class);
         $router->delete('/images/{image_id}', DeleteImageAction::class);
@@ -367,6 +378,9 @@ $router->prefix('/public')->group(
 
         // Questions
         $router->get('/events/{event_id}/questions', GetQuestionsPublicAction::class);
+
+        // Seating Zones
+        $router->get('/events/{event_id}/seating-zones', GetSeatingZonesPublicAction::class);
 
         // Webhooks
         $router->post('/webhooks/stripe', StripeIncomingWebhookAction::class);
