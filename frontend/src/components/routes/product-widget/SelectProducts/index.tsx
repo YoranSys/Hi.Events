@@ -36,6 +36,7 @@ import {promoCodeClientPublic} from "../../../../api/promo-code.client.ts";
 import {IconChevronRight, IconX} from "@tabler/icons-react"
 import {getSessionIdentifier} from "../../../../utilites/sessionIdentifier.ts";
 import {Constants} from "../../../../constants.ts";
+import {SeatingChart} from "../SeatingChart";
 
 const AFFILIATE_EXPIRY_DAYS = 30;
 
@@ -89,6 +90,7 @@ const SelectProducts = (props: SelectProductsProps) => {
     const [resizeRef, resizeObserverRect] = useResizeObserver();
     const [collapsedProducts, setCollapsedProducts] = useState<{ [key: number]: boolean }>({});
     const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+    const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
 
     useEffect(() => sendHeightToIframeWidgets(), [resizeObserverRect.height]);
 
@@ -399,6 +401,18 @@ const SelectProducts = (props: SelectProductsProps) => {
                 <form target={'__blank'} onSubmit={form.onSubmit(handleProductSelection as any)}>
                     <Input type={'hidden'} {...form.getInputProps('promo_code')} />
                     <Input type={'hidden'} {...form.getInputProps('affiliate_code')} />
+                    
+                    {/* Seating Chart Integration */}
+                    {event.enable_seating_chart && (
+                        <div style={{ marginBottom: '2rem' }}>
+                            <SeatingChart
+                                event={event}
+                                onSeatsSelected={setSelectedSeats}
+                                selectedSeats={selectedSeats}
+                            />
+                        </div>
+                    )}
+                    
                     <div className={'hi-product-category-rows'}>
                         {productCategories && productCategories.map((category) => {
                             return (

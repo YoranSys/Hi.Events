@@ -81,6 +81,16 @@ class Event extends BaseModel
         return $this->hasMany(Affiliate::class);
     }
 
+    public function venue(): BelongsTo
+    {
+        return $this->belongsTo(Venue::class);
+    }
+
+    public function seat_reservations(): HasMany
+    {
+        return $this->hasMany(SeatReservation::class);
+    }
+
     public static function boot(): void
     {
         parent::boot();

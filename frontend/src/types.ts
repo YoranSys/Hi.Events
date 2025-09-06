@@ -240,6 +240,8 @@ export interface Event extends EventBase {
     organizer_id?: IdParam;
     location_details?: VenueAddress;
     statistics?: EventStatistics;
+    venue_id?: IdParam;
+    enable_seating_chart?: boolean;
 }
 
 export interface EventStatistics {
