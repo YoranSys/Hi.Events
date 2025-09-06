@@ -1,4 +1,4 @@
-import { GenericDataType } from "../types";
+import { GenericDataResponse } from "../types";
 import {api} from "./client";
 
 interface Zone {
@@ -73,29 +73,29 @@ interface CreateVenueRequest {
 }
 
 export const seatingClientPublic = {
-    getEventSeats: async (eventId: number): Promise<GenericDataType<SeatingChartData>> => {
+    getEventSeats: async (eventId: number): Promise<GenericDataResponse<SeatingChartData>> => {
         return api.get(`/public/events/${eventId}/seats`);
     },
 
-    reserveZones: async (eventId: number, data: ReserveZoneRequest): Promise<GenericDataType<ReserveZoneResponse>> => {
+    reserveZones: async (eventId: number, data: ReserveZoneRequest): Promise<GenericDataResponse<ReserveZoneResponse>> => {
         return api.post(`/public/events/${eventId}/seats/reserve`, data);
     }
 };
 
 export const seatingClient = {
-    getVenues: async (): Promise<GenericDataType<Venue[]>> => {
+    getVenues: async (): Promise<GenericDataResponse<Venue[]>> => {
         return api.get('/venues');
     },
 
-    getVenue: async (venueId: number): Promise<GenericDataType<Venue>> => {
+    getVenue: async (venueId: number): Promise<GenericDataResponse<Venue>> => {
         return api.get(`/venues/${venueId}`);
     },
 
-    createVenue: async (data: CreateVenueRequest): Promise<GenericDataType<Venue>> => {
+    createVenue: async (data: CreateVenueRequest): Promise<GenericDataResponse<Venue>> => {
         return api.post('/venues', data);
     },
 
-    updateVenue: async (venueId: number, data: Partial<CreateVenueRequest>): Promise<GenericDataType<Venue>> => {
+    updateVenue: async (venueId: number, data: Partial<CreateVenueRequest>): Promise<GenericDataResponse<Venue>> => {
         return api.put(`/venues/${venueId}`, data);
     }
 };

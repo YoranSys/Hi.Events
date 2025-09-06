@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hi.Events Zone-Based Seating Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #212529;
+        }
+        .subtitle {
+            color: #6c757d;
+            font-size: 16px;
+        }
+        .venue-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .venue-icon {
+            width: 20px;
+            height: 20px;
+            fill: #666;
+        }
+        .zone-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: border-color 0.2s;
+        }
+        .zone-card:hover {
+            border-color: #007bff;
+        }
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .zone-info {
+            flex: 1;
+        }
+        .zone-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .zone-details {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .zone-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .zone-badge.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .zone-badge.limited {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .zone-badge.sold-out {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .zone-selector {
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .quantity-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .zone-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .summary-total {
+            font-weight: 600;
+            font-size: 18px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .checkout-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .checkout-btn:hover {
+            background: #0056b3;
+        }
+        .checkout-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .selected-zones {
+            margin-top: 20px;
+        }
+        .zone-selection {
+            background: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 5px 5px 0;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .improvement-note {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .improvement-note h4 {
+            margin: 0 0 10px 0;
+            color: #0c5460;
+        }
+        .improvement-note p {
+            margin: 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Zone-Based Seating System</h1>
+            <p class="subtitle">Simplified venue management focused on zones rather than individual seats</p>
+        </div>
+
+        <div class="improvement-note">
+            <h4>✅ Key Improvements Made</h4>
+            <p>
+                <strong>1. Functional Admin Interface:</strong> "Edit Layout" button now works with zone management<br>
+                <strong>2. Simplified Zone-Based Approach:</strong> Replaced complex individual seat positioning with easy-to-manage zones<br>
+                <strong>3. Better User Experience:</strong> Clear quantity selection and pricing per zone
+            </p>
+        </div>
+
+        <div class="venue-title">
+            <svg class="venue-icon" viewBox="0 0 24 24">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            <h2>Madison Square Garden - Concert Hall</h2>
+        </div>
+
+        <div id="zones-container">
+            <!-- Zones will be rendered here by JavaScript -->
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h3>Selection Summary</h3>
+            <div id="summary-content"></div>
+        </div>
+
+        <div class="selected-zones" id="selected-zones" style="display: none;">
+            <h4>Selected Zones:</h4>
+            <div id="zone-selections"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock venue data with zones
+        const venueData = {
+            id: 1,
+            name: "Madison Square Garden - Concert Hall",
+            zones: [
+                {
+                    id: "zone_0",
+                    name: "VIP Section",
+                    capacity: 50,
+                    available_capacity: 35,
+                    price: 250.00,
+                    color: "#2196F3",
+                    reserved_count: 10,
+                    held_count: 5
+                },
+                {
+                    id: "zone_1", 
+                    name: "Premium Orchestra",
+                    capacity: 120,
+                    available_capacity: 89,
+                    price: 150.00,
+                    color: "#4CAF50",
+                    reserved_count: 25,
+                    held_count: 6
+                },
+                {
+                    id: "zone_2",
+                    name: "General Orchestra", 
+                    capacity: 200,
+                    available_capacity: 156,
+                    price: 85.00,
+                    color: "#FF9800",
+                    reserved_count: 35,
+                    held_count: 9
+                },
+                {
+                    id: "zone_3",
+                    name: "Balcony Level",
+                    capacity: 150,
+                    available_capacity: 0,
+                    price: 65.00,
+                    color: "#9C27B0",
+                    reserved_count: 150,
+                    held_count: 0
+                },
+                {
+                    id: "zone_4",
+                    name: "Upper Balcony",
+                    capacity: 100,
+                    available_capacity: 82,
+                    price: 45.00,
+                    color: "#795548",
+                    reserved_count: 15,
+                    held_count: 3
+                }
+            ]
+        };
+
+        let zoneSelections = {};
+
+        function getAvailabilityBadge(zone) {
+            const availablePercent = (zone.available_capacity / zone.capacity) * 100;
+            if (availablePercent === 0) {
+                return { class: 'sold-out', text: 'Sold Out' };
+            } else if (availablePercent < 25) {
+                return { class: 'limited', text: 'Limited' };
+            } else {
+                return { class: 'available', text: 'Available' };
+            }
+        }
+
+        function updateQuantity(zoneId, quantity) {
+            if (quantity > 0) {
+                zoneSelections[zoneId] = quantity;
+            } else {
+                delete zoneSelections[zoneId];
+            }
+            updateSummary();
+            updateSelectedZones();
+        }
+
+        function updateSummary() {
+            const summaryEl = document.getElementById('summary');
+            const summaryContent = document.getElementById('summary-content');
+            
+            const totalTickets = Object.values(zoneSelections).reduce((sum, qty) => sum + qty, 0);
+            
+            if (totalTickets === 0) {
+                summaryEl.style.display = 'none';
+                return;
+            }
+
+            summaryEl.style.display = 'block';
+            
+            let content = '';
+            let totalPrice = 0;
+
+            for (const [zoneId, quantity] of Object.entries(zoneSelections)) {
+                const zone = venueData.zones.find(z => z.id === zoneId);
+                if (zone) {
+                    const zoneTotal = zone.price * quantity;
+                    totalPrice += zoneTotal;
+                    
+                    content += `
+                        <div class="summary-row">
+                            <span>${zone.name} (${quantity} tickets)</span>
+                            <span>$${zoneTotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            content += `
+                <div class="summary-row summary-total">
+                    <span>Total (${totalTickets} tickets)</span>
+                    <span>$${totalPrice.toFixed(2)}</span>
+                </div>
+                <button class="checkout-btn" onclick="proceedToCheckout()">
+                    Reserve ${totalTickets} Ticket${totalTickets > 1 ? 's' : ''} - $${totalPrice.toFixed(2)}
+                </button>
+            `;
+
+            summaryContent.innerHTML = content;
+        }
+
+        function updateSelectedZones() {
+            const selectedZonesEl = document.getElementById('selected-zones');
+            const zoneSelectionsEl = document.getElementById('zone-selections');
+            
+            const totalSelections = Object.keys(zoneSelections).length;
+            
+            if (totalSelections === 0) {
+                selectedZonesEl.style.display = 'none';
+                return;
+            }
+
+            selectedZonesEl.style.display = 'block';
+            
+            let content = '';
+            for (const [zoneId, quantity] of Object.entries(zoneSelections)) {
+                const zone = venueData.zones.find(z => z.id === zoneId);
+                if (zone) {
+                    content += `
+                        <div class="zone-selection">
+                            ${zone.name}: ${quantity} ticket${quantity > 1 ? 's' : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            zoneSelectionsEl.innerHTML = content;
+        }
+
+        function proceedToCheckout() {
+            const totalTickets = Object.values(zoneSelections).reduce((sum, qty) => sum + qty, 0);
+            const totalPrice = Object.entries(zoneSelections).reduce((sum, [zoneId, quantity]) => {
+                const zone = venueData.zones.find(z => z.id === zoneId);
+                return sum + (zone ? zone.price * quantity : 0);
+            }, 0);
+
+            alert(`✅ Zone-Based System Working!\n\n` +
+                  `Would proceed to checkout with:\n` +
+                  `• ${totalTickets} ticket(s) selected\n` +
+                  `• Total: $${totalPrice.toFixed(2)}\n` +
+                  `• From ${Object.keys(zoneSelections).length} zone(s)\n\n` +
+                  `This demonstrates the simplified zone-based approach requested.`);
+        }
+
+        function renderZones() {
+            const container = document.getElementById('zones-container');
+            
+            const zonesHtml = venueData.zones.map(zone => {
+                const badge = getAvailabilityBadge(zone);
+                const isDisabled = zone.available_capacity === 0;
+                
+                return `
+                    <div class="zone-card" style="border-color: ${zone.color};">
+                        <div class="zone-header">
+                            <div class="zone-info">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="zone-color" style="background-color: ${zone.color};"></div>
+                                    <div class="zone-name">${zone.name}</div>
+                                </div>
+                                <div class="zone-details">
+                                    Price: $${zone.price.toFixed(2)} per ticket
+                                </div>
+                                <div>
+                                    <span class="zone-badge ${badge.class}">
+                                        ${zone.available_capacity} / ${zone.capacity} ${badge.text}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="zone-selector">
+                                <label for="quantity-${zone.id}">Quantity</label>
+                                <input 
+                                    type="number" 
+                                    id="quantity-${zone.id}"
+                                    class="quantity-input"
+                                    min="0" 
+                                    max="${zone.available_capacity}"
+                                    value="0"
+                                    ${isDisabled ? 'disabled' : ''}
+                                    onchange="updateQuantity('${zone.id}', parseInt(this.value) || 0)"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = zonesHtml;
+        }
+
+        // Initialize the demo
+        renderZones();
+    </script>
+</body>
+</html>
