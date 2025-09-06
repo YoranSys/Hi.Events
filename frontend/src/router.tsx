@@ -269,6 +269,13 @@ export const router: RouteObject[] = [
                 }
             },
             {
+                path: "seating-chart",
+                async lazy() {
+                    const SeatingChart = await import("./components/routes/event/seating-chart");
+                    return {Component: SeatingChart.default};
+                }
+            },
+            {
                 path: "attendees",
                 async lazy() {
                     const Attendees = await import("./components/routes/event/attendees");

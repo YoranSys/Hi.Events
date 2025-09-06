@@ -33,9 +33,11 @@ import {PoweredByFooter} from "../../../common/PoweredByFooter";
 import {Event, Product} from "../../../../types.ts";
 import {eventsClientPublic} from "../../../../api/event.client.ts";
 import {promoCodeClientPublic} from "../../../../api/promo-code.client.ts";
-import {IconChevronRight, IconX} from "@tabler/icons-react"
+import {IconChevronRight, IconX, IconMapPin} from "@tabler/icons-react"
 import {getSessionIdentifier} from "../../../../utilites/sessionIdentifier.ts";
 import {Constants} from "../../../../constants.ts";
+import {InteractiveSeatingChart} from "../../../common/InteractiveSeatingChart";
+import {useGetSeatingZonesPublic} from "../../../../queries/useSeatingZonesPublic.ts";
 
 const AFFILIATE_EXPIRY_DAYS = 30;
 
@@ -89,6 +91,11 @@ const SelectProducts = (props: SelectProductsProps) => {
     const [resizeRef, resizeObserverRect] = useResizeObserver();
     const [collapsedProducts, setCollapsedProducts] = useState<{ [key: number]: boolean }>({});
     const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+    const [showSeatingChart, setShowSeatingChart] = useState(false);
+    const [selectedProductIdFromZone, setSelectedProductIdFromZone] = useState<number | null>(null);
+
+    // Get seating zones if available
+    const {data: seatingZones} = useGetSeatingZonesPublic(eventId);
 
     useEffect(() => sendHeightToIframeWidgets(), [resizeObserverRect.height]);
 
@@ -285,6 +292,24 @@ const SelectProducts = (props: SelectProductsProps) => {
         }
     }
 
+    const handleZoneSelected = (productId: number, zoneName?: string) => {
+        setSelectedProductIdFromZone(productId);
+        setShowSeatingChart(false);
+        
+        // Find the product and auto-select it
+        const selectedProduct = products.find(p => p.id === productId);
+        if (selectedProduct && selectedProduct.prices && selectedProduct.prices.length > 0) {
+            // Auto-select the first price tier with quantity 1
+            const firstPrice = selectedProduct.prices[0];
+            form.setFieldValue(`products.${products.indexOf(selectedProduct)}.quantities.0.quantity`, 1);
+            
+            showSuccess(zoneName ? 
+                t`Selected zone "${zoneName}" - ${selectedProduct.title}` : 
+                t`Selected ${selectedProduct.title}`
+            );
+        }
+    };
+
     const isButtonDisabled = productMutation.isPending
         || !productAreAvailable
         || selectedProductQuantitySum === 0
@@ -399,6 +424,37 @@ const SelectProducts = (props: SelectProductsProps) => {
                 <form target={'__blank'} onSubmit={form.onSubmit(handleProductSelection as any)}>
                     <Input type={'hidden'} {...form.getInputProps('promo_code')} />
                     <Input type={'hidden'} {...form.getInputProps('affiliate_code')} />
+                    
+                    {/* Seating Chart Button */}
+                    {seatingZones && seatingZones.length > 0 && (
+                        <div className={'hi-seating-chart-section'} style={{ 
+                            marginBottom: '24px',
+                            padding: '16px',
+                            background: props.colors?.background || '#f8f9fa',
+                            borderRadius: '8px',
+                            border: `2px solid ${props.colors?.primary || '#228be6'}`,
+                            textAlign: 'center'
+                        }}>
+                            <p style={{ 
+                                margin: '0 0 12px 0',
+                                color: props.colors?.primaryText || '#495057',
+                                fontSize: '14px'
+                            }}>
+                                {t`This venue has interactive seating zones`}
+                            </p>
+                            <Button
+                                leftSection={<IconMapPin size={16} />}
+                                onClick={() => setShowSeatingChart(true)}
+                                style={{
+                                    backgroundColor: props.colors?.primary || '#228be6',
+                                    color: props.colors?.primaryText || 'white'
+                                }}
+                            >
+                                {t`View Seating Chart`}
+                            </Button>
+                        </div>
+                    )}
+
                     <div className={'hi-product-category-rows'}>
                         {productCategories && productCategories.map((category) => {
                             return (
@@ -602,6 +658,33 @@ const SelectProducts = (props: SelectProductsProps) => {
                  * If you wish to remove this notice, a commercial license is available at: https://hi.events/licensing
                  */
             }
+            
+            {/* Seating Chart Modal */}
+            {showSeatingChart && seatingZones && seatingZones.length > 0 && (
+                <Modal
+                    opened={showSeatingChart}
+                    onClose={() => setShowSeatingChart(false)}
+                    title={t`Interactive Seating Chart`}
+                    size="xl"
+                    styles={{
+                        content: {
+                            backgroundColor: props.colors?.background || 'white'
+                        },
+                        header: {
+                            backgroundColor: props.colors?.background || 'white',
+                            color: props.colors?.primaryText || 'inherit'
+                        }
+                    }}
+                >
+                    <InteractiveSeatingChart
+                        imageUrl={event?.settings?.venue_map_image_url || ''}
+                        zones={seatingZones}
+                        onZoneSelected={handleZoneSelected}
+                        selectedProductId={selectedProductIdFromZone || undefined}
+                    />
+                </Modal>
+            )}
+            
             {(props.showPoweredBy ?? true) && (
                 <PoweredByFooter style={{
                     'color': props.colors?.primaryText || '#000',
