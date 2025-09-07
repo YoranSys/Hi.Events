@@ -198,10 +198,40 @@ export const InteractiveSeatingChart: React.FC<InteractiveSeatingChartProps> = (
         const image = imageRef.current;
         if (!canvas || !image) return;
 
-        // Set canvas size to match the displayed image size
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
+        // Set canvas size to be larger for better visibility
+        const maxWidth = 1000;
+        const maxHeight = 700;
+        
+        let { width, height } = image;
+        
+        // Scale to fit within max dimensions while maintaining aspect ratio
+        if (width > maxWidth || height > maxHeight) {
+            const aspectRatio = width / height;
+            if (width > height) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            } else {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+        }
+        
+        // Ensure minimum size for better visibility
+        const minWidth = 600;
+        const minHeight = 400;
+        if (width < minWidth) {
+            width = minWidth;
+            height = width / (image.width / image.height);
+        }
+        if (height < minHeight) {
+            height = minHeight;
+            width = height * (image.width / image.height);
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
         
         draw();
     }, [draw]);
@@ -220,8 +250,9 @@ export const InteractiveSeatingChart: React.FC<InteractiveSeatingChartProps> = (
                 onMouseMove={handleCanvasMouseMove}
                 onClick={handleCanvasClick}
                 style={{
-                    maxWidth: '100%',
+                    width: '100%',
                     height: 'auto',
+                    maxWidth: '1000px',
                     border: '1px solid #ddd',
                     borderRadius: '8px'
                 }}

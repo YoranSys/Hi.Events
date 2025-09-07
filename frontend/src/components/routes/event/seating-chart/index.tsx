@@ -21,7 +21,7 @@ import {PageBody} from '../../../common/PageBody';
 import {ToolBar} from '../../../common/ToolBar';
 import {useGetEvent} from '../../../../queries/useGetEvent';
 import {useGetProducts} from '../../../../queries/useGetProducts';
-import {useGetSeatingZones, useCreateSeatingZone, useDeleteSeatingZone} from '../../../../queries/useSeatingZones';
+import {useGetSeatingZones, useCreateSeatingZone, useDeleteSeatingZone, useUploadVenueMap} from '../../../../queries/useSeatingZones';
 import {PolygonDrawer} from '../../../common/PolygonDrawer';
 import {showError, showSuccess} from '../../../../utilites/notifications';
 import {CreateSeatingZonePayload} from '../../../../api/seating-zone.client';
@@ -31,22 +31,35 @@ export const SeatingChart = () => {
     const [isDrawing, setIsDrawing] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<string>('');
     const [venueMapFile, setVenueMapFile] = useState<File | null>(null);
-    const [venueMapUrl, setVenueMapUrl] = useState<string>('');
+    const [venueMapUrlState, setVenueMapUrlState] = useState<string>('');
 
     const {data: event} = useGetEvent(eventId);
     const {data: productsResponse} = useGetProducts(eventId);
     const {data: zonesResponse} = useGetSeatingZones(eventId);
     const createZoneMutation = useCreateSeatingZone();
     const deleteZoneMutation = useDeleteSeatingZone();
+    const uploadVenueMapMutation = useUploadVenueMap();
 
     const products = productsResponse?.data || [];
     const zones = zonesResponse?.data || [];
+    
+    // Get venue map URL from event settings
+    const venueMapUrl = event?.settings?.venue_map_image_url || venueMapUrlState;
 
-    const handleFileUpload = (file: File | null) => {
+    const handleFileUpload = async (file: File | null) => {
         if (file) {
             setVenueMapFile(file);
-            const url = URL.createObjectURL(file);
-            setVenueMapUrl(url);
+            
+            try {
+                // Upload the file to the server
+                await uploadVenueMapMutation.mutateAsync({
+                    eventId: Number(eventId),
+                    file
+                });
+                showSuccess(t`Venue map uploaded successfully`);
+            } catch (error) {
+                showError(t`Failed to upload venue map`);
+            }
         }
     };
 

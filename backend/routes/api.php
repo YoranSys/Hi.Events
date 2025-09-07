@@ -147,6 +147,7 @@ use HiEvents\Http\Actions\SeatingZones\DeleteSeatingZoneAction;
 use HiEvents\Http\Actions\SeatingZones\GetSeatingZonesAction;
 use HiEvents\Http\Actions\SeatingZones\GetSeatingZonesPublicAction;
 use HiEvents\Http\Actions\SeatingZones\UpdateSeatingZoneAction;
+use HiEvents\Http\Actions\SeatingZones\UploadVenueMapAction;
 use Illuminate\Routing\Router;
 
 /** @var Router|Router $router */
@@ -336,6 +337,7 @@ $router->middleware(['auth:api'])->group(
         $router->post('/events/{event_id}/seating-zones', CreateSeatingZoneAction::class);
         $router->put('/events/{event_id}/seating-zones/{zone_id}', UpdateSeatingZoneAction::class);
         $router->delete('/events/{event_id}/seating-zones/{zone_id}', DeleteSeatingZoneAction::class);
+        $router->post('/events/{event_id}/venue-map', UploadVenueMapAction::class);
 
         // Images
         $router->post('/images', CreateImageAction::class);

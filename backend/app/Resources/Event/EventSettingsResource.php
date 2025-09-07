@@ -63,6 +63,11 @@ class EventSettingsResource extends JsonResource
             'invoice_tax_details' => $this->getInvoiceTaxDetails(),
             'invoice_notes' => $this->getInvoiceNotes(),
             'invoice_payment_terms_days' => $this->getInvoicePaymentTermsDays(),
+            
+            // Seating chart settings
+            'enable_seating_chart' => $this->getEnableSeatingChart(),
+            'venue_map_image_id' => $this->getVenueMapImageId(),
+            'venue_map_image_url' => $this->getVenueMapImageUrl(),
         ];
     }
 }

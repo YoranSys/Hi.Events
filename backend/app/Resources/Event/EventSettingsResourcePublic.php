@@ -69,6 +69,10 @@ class EventSettingsResourcePublic extends JsonResource
             // Invoice settings
             'require_billing_address' => $this->getRequireBillingAddress(),
             'invoice_label' => $this->getInvoiceLabel(),
+            
+            // Seating chart settings
+            'enable_seating_chart' => $this->getEnableSeatingChart(),
+            'venue_map_image_url' => $this->getVenueMapImageUrl(),
         ];
     }
 }

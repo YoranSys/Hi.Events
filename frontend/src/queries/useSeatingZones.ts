@@ -45,3 +45,17 @@ export const useDeleteSeatingZone = () => {
         },
     });
 };
+
+export const useUploadVenueMap = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({eventId, file}: {eventId: number; file: File}) =>
+            seatingZoneClient.uploadVenueMap(eventId, file),
+        onSuccess: (_, {eventId}) => {
+            // Invalidate event queries to refresh the venue map URL
+            queryClient.invalidateQueries({queryKey: ['event', eventId]});
+            queryClient.invalidateQueries({queryKey: ['seating-zones', eventId]});
+        },
+    });
+};

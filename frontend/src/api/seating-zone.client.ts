@@ -52,6 +52,18 @@ export const seatingZoneClient = {
     delete: async (eventId: IdParam, zoneId: IdParam) => {
         const response = await api.delete(`/events/${eventId}/seating-zones/${zoneId}`);
         return response.data;
+    },
+
+    uploadVenueMap: async (eventId: IdParam, file: File) => {
+        const formData = new FormData();
+        formData.append('venue_map', file);
+        
+        const response = await api.post(`/events/${eventId}/venue-map`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     }
 };
 
