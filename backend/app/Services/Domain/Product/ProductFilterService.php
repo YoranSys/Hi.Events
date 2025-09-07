@@ -65,6 +65,32 @@ class ProductFilterService
             ));
     }
 
+    /**
+     * @param Collection<ProductDomainObject> $products
+     * @param PromoCodeDomainObject|null $promoCode
+     * @param bool $hideSoldOutProducts
+     * @return Collection<ProductDomainObject>
+     */
+    public function filterProducts(
+        Collection             $products,
+        ?PromoCodeDomainObject $promoCode = null,
+        bool                   $hideSoldOutProducts = true,
+    ): Collection
+    {
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $productQuantities = $this
+            ->fetchAvailableProductQuantitiesService
+            ->getAvailableProductQuantities($products->first()->getEventId());
+
+        return $products
+            ->map(fn(ProductDomainObject $product) => $this->processProduct($product, $productQuantities->productQuantities, $promoCode))
+            ->reject(fn(ProductDomainObject $product) => $this->filterProduct($product, $promoCode, $hideSoldOutProducts))
+            ->each(fn(ProductDomainObject $product) => $this->processProductPrices($product, $hideSoldOutProducts));
+    }
+
     private function isHiddenByPromoCode(ProductDomainObject $product, ?PromoCodeDomainObject $promoCode): bool
     {
         return $product->getIsHiddenWithoutPromoCode() && !(

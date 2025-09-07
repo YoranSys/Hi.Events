@@ -20,6 +20,17 @@ class SeatingZone extends BaseModel
         'coordinates' => 'array',
     ];
 
+    /**
+     * Set the coordinates attribute.
+     *
+     * @param  mixed  $value
+     * @return void
+     */
+    public function setCoordinatesAttribute($value)
+    {
+        $this->attributes['coordinates'] = is_array($value) ? json_encode($value) : $value;
+    }
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);

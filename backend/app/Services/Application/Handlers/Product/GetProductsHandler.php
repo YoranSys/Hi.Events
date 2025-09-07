@@ -25,8 +25,8 @@ class GetProductsHandler
             ->loadRelation(TaxAndFeesDomainObject::class)
             ->findByEventId($eventId, $queryParamsDTO);
 
-        $filteredProducts = $this->productFilterService->filter(
-            productsCategories: $productPaginator->getCollection(),
+        $filteredProducts = $this->productFilterService->filterProducts(
+            products: $productPaginator->getCollection(),
             hideSoldOutProducts: false,
         );
 
