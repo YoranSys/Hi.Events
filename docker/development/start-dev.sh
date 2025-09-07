@@ -56,7 +56,8 @@ fi
 
 echo -e "${GREEN}Running composer install in the backend service...${NC}"
 
-$COMPOSE_CMD exec -T backend composer install \
+# Run composer as root to avoid permission issues with mounted volumes
+$COMPOSE_CMD exec -T --user root backend composer install \
                                         --ignore-platform-reqs \
                                         --no-interaction \
                                         --optimize-autoloader \
@@ -76,17 +77,21 @@ done
 echo -e "\n${GREEN}Database is ready. Proceeding with migrations...${NC}"
 
 if [ ! -f ./../../backend/.env ]; then
-    $COMPOSE_CMD exec backend cp .env.example .env
+    $COMPOSE_CMD exec --user root backend cp .env.example .env
+    $COMPOSE_CMD exec --user root backend chown www-data:www-data .env
 fi
 
 if [ ! -f ./../../frontend/.env ]; then
-    $COMPOSE_CMD exec frontend cp .env.example .env
+    $COMPOSE_CMD exec --user root frontend cp .env.example .env
+    $COMPOSE_CMD exec --user root frontend chown www-data:www-data .env
 fi
 
-$COMPOSE_CMD exec backend php artisan key:generate
-$COMPOSE_CMD exec backend php artisan migrate
-$COMPOSE_CMD exec backend chmod -R 775 /var/www/html/vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer
-$COMPOSE_CMD exec backend php artisan storage:link
+$COMPOSE_CMD exec --user root backend php artisan key:generate
+$COMPOSE_CMD exec --user root backend php artisan migrate
+$COMPOSE_CMD exec --user root backend chmod -R 775 /var/www/html/vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer || true
+$COMPOSE_CMD exec --user root backend chmod -R 775 /var/www/html/storage
+$COMPOSE_CMD exec --user root backend chown -R www-data:www-data /var/www/html/storage
+$COMPOSE_CMD exec --user root backend php artisan storage:link
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Migrations failed.${NC}"
