@@ -5,7 +5,7 @@ import {IdParam} from '../types.ts';
 export const useGetSeatingZonesPublic = (eventId: IdParam) => {
     return useQuery({
         queryKey: ['seating-zones-public', eventId],
-        queryFn: () => seatingZoneClientPublic.getSeatingZones(Number(eventId)),
+        queryFn: () => seatingZoneClientPublic.all(Number(eventId)),
         enabled: !!eventId,
     });
 };
