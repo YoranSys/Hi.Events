@@ -28,12 +28,14 @@ interface EventHomepageProps {
     };
     backgroundType?: 'COLOR' | 'MIRROR_COVER_IMAGE',
     continueButtonText?: string;
+    customCss?: string;
+    customJs?: string;
     event?: Event;
     promoCodeValid?: boolean;
     promoCode?: string;
 }
 
-const EventHomepage = ({colors, continueButtonText, backgroundType, ...loaderData}: EventHomepageProps) => {
+const EventHomepage = ({colors, continueButtonText, backgroundType, customCss, customJs, ...loaderData}: EventHomepageProps) => {
     const {event, promoCodeValid, promoCode} = loaderData;
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -137,8 +139,16 @@ const EventHomepage = ({colors, continueButtonText, backgroundType, ...loaderDat
                         body, .ssr-loader {
                             background-color: ${colors?.bodyBackground || event?.settings?.homepage_body_background_color || '#f5f5f5'} !important;
                         }
+                        ${customCss || event?.settings?.custom_css || ''}
                     `}
                 </style>
+                {(customJs || event?.settings?.custom_js) && (
+                    <script 
+                        dangerouslySetInnerHTML={{
+                            __html: customJs || event?.settings?.custom_js || ''
+                        }}
+                    />
+                )}
                 {event && <EventDocumentHead event={event}/>}
                 {(coverImage && backgroundType === 'MIRROR_COVER_IMAGE') && (
                     <div

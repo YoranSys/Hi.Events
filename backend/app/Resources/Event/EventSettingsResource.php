@@ -29,6 +29,8 @@ class EventSettingsResource extends JsonResource
             'homepage_secondary_color' => $this->getHomepageSecondaryColor(),
             'homepage_secondary_text_color' => $this->getHomepageSecondaryTextColor(),
             'homepage_background_type' => $this->getHomepageBackgroundType(),
+            'custom_css' => $this->getCustomCss(),
+            'custom_js' => $this->getCustomJs(),
 
             'website_url' => $this->getWebsiteUrl(),
             'maps_url' => $this->getMapsUrl(),
