@@ -47,6 +47,28 @@ const HomepageDesigner = () => {
             continue_button_text: '',
             custom_css: '',
             custom_js: '',
+        },
+        validate: {
+            custom_js: (value) => {
+                if (!value) return null;
+                // Basic check for potentially dangerous patterns
+                const dangerousPatterns = [
+                    /document\.cookie/i,
+                    /localStorage/i,
+                    /sessionStorage/i,
+                    /window\.location/i,
+                    /eval\s*\(/i,
+                    /innerHTML\s*=/i,
+                    /outerHTML\s*=/i,
+                ];
+                
+                for (const pattern of dangerousPatterns) {
+                    if (pattern.test(value)) {
+                        return t`Warning: Your JavaScript contains potentially unsafe code. Please review carefully.`;
+                    }
+                }
+                return null;
+            }
         }
     });
 
@@ -280,6 +302,7 @@ const HomepageDesigner = () => {
                                                 description={t`Add custom CSS to style your event page`}
                                                 placeholder={t`/* Enter your custom CSS here */\n.my-custom-class {\n  color: #ffffff;\n}`}
                                                 minRows={6}
+                                                maxLength={10000}
                                                 size="sm"
                                                 {...form.getInputProps('custom_css')} 
                                             />
@@ -288,12 +311,18 @@ const HomepageDesigner = () => {
                                                 description={t`Add custom JavaScript to enhance your event page functionality`}
                                                 placeholder={t`// Enter your custom JavaScript here\nconsole.log('My custom script loaded');`}
                                                 minRows={6}
+                                                maxLength={10000}
                                                 size="sm"
                                                 {...form.getInputProps('custom_js')} 
                                             />
-                                            <Text size="xs" c="dimmed">
-                                                {t`Warning: Custom code will be executed on your event page. Only add code from trusted sources.`}
-                                            </Text>
+                                            <div>
+                                                <Text size="xs" c="orange" fw={500}>
+                                                    {t`⚠️ Security Warning`}
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                    {t`Custom code will be executed on your event page. Only add code from trusted sources. Avoid using document.cookie, localStorage, or other potentially unsafe operations.`}
+                                                </Text>
+                                            </div>
                                         </Stack>
                                     </fieldset>
                                 </form>

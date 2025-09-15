@@ -31,6 +31,8 @@ class UpdateEventSettingsRequest extends BaseRequest
             'homepage_secondary_text_color' => ['nullable', ...RulesHelper::HEX_COLOR],
             'homepage_body_background_color' => ['nullable', ...RulesHelper::HEX_COLOR],
             'homepage_background_type' => ['nullable', Rule::in(HomepageBackgroundType::valuesArray())],
+            'custom_css' => ['nullable', 'string', 'max:10000'],
+            'custom_js' => ['nullable', 'string', 'max:10000'],
 
             'website_url' => ['url', 'nullable'],
             'maps_url' => ['url', 'nullable'],
@@ -106,6 +108,10 @@ class UpdateEventSettingsRequest extends BaseRequest
             'organization_name.required_if' => __('The organization name is required when invoicing is enabled.'),
             'organization_address.required_if' => __('The organization address is required when invoicing is enabled.'),
             'invoice_start_number.min' => __('The invoice start number must be at least 1.'),
+            
+            // Custom CSS/JS messages
+            'custom_css.max' => __('The custom CSS may not be greater than 10,000 characters.'),
+            'custom_js.max' => __('The custom JavaScript may not be greater than 10,000 characters.'),
         ];
     }
 }
