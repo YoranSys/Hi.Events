@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import QrScanner from 'qr-scanner';
+import * as zbarWasm from '@undecaf/zbar-wasm';
 import {useDebouncedValue} from '@mantine/hooks';
 import classes from './QrScanner.module.scss';
 import {IconBulb, IconBulbOff, IconCameraRotate, IconVolume, IconVolumeOff, IconX} from "@tabler/icons-react";
@@ -12,15 +12,23 @@ interface QRScannerComponentProps {
     onClose: () => void;
 }
 
+interface Camera {
+    deviceId: string;
+    label: string;
+}
+
 export const QRScannerComponent = (props: QRScannerComponentProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const qrScannerRef = useRef<QrScanner | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const animationRef = useRef<number | null>(null);
     const [permissionGranted, setPermissionGranted] = useState(false);
     const [permissionDenied, setPermissionDenied] = useState(false);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
     const [isFlashAvailable, setIsFlashAvailable] = useState(false);
     const [isFlashOn, setIsFlashOn] = useState(false);
-    const [cameraList, setCameraList] = useState<QrScanner.Camera[]>();
+    const [cameraList, setCameraList] = useState<Camera[]>([]);
+    const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
     const [processedAttendeeIds, setProcessedAttendeeIds] = useState<string[]>([]);
     const latestProcessedAttendeeIdsRef = useRef<string[]>([]);
 
@@ -48,19 +56,110 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
 
     const startScanner = async () => {
         try {
-            await navigator.mediaDevices.getUserMedia({video: true});
+            const constraints: MediaStreamConstraints = {
+                video: {
+                    facingMode: 'environment',
+                    deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined
+                }
+            };
+            
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             setPermissionGranted(true);
+            
             if (videoRef.current) {
-                qrScannerRef.current = new QrScanner(videoRef.current, (result) => {
-                    setCurrentAttendeeId(result.data);
-                }, {
-                    maxScansPerSecond: 1,
-                });
-                qrScannerRef.current.start();
+                videoRef.current.srcObject = stream;
+                streamRef.current = stream;
+                
+                // Check for flashlight support
+                const videoTrack = stream.getVideoTracks()[0];
+                const capabilities = videoTrack.getCapabilities();
+                setIsFlashAvailable(Boolean(capabilities.torch));
+                
+                videoRef.current.onloadedmetadata = () => {
+                    startScanningLoop();
+                };
             }
         } catch (error) {
             setPermissionDenied(true);
-            console.error(error);
+            console.error('Camera access error:', error);
+        }
+    };
+
+    const startScanningLoop = () => {
+        if (!videoRef.current || !canvasRef.current) return;
+        
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) return;
+
+        const scan = async () => {
+            if (!video.videoWidth || !video.videoHeight) {
+                animationRef.current = requestAnimationFrame(scan);
+                return;
+            }
+
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            try {
+                // Get image data and scan for QR codes
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const symbols = await zbarWasm.scanImageData(imageData);
+                
+                if (symbols.length > 0) {
+                    const qrCode = symbols.find(symbol => symbol.typeName === 'QR-Code');
+                    if (qrCode) {
+                        const decodedData = qrCode.decode();
+                        setCurrentAttendeeId(decodedData);
+                    }
+                }
+            } catch (error) {
+                // Ignore scanning errors and continue
+                console.debug('Scan error:', error);
+            }
+            
+            // Continue scanning
+            animationRef.current = requestAnimationFrame(scan);
+        };
+        
+        // Start the scanning loop
+        animationRef.current = requestAnimationFrame(scan);
+    };
+
+    const stopScanner = () => {
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+        }
+        
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+    };
+
+    const getCameraList = async () => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices
+                .filter(device => device.kind === 'videoinput')
+                .map(device => ({
+                    deviceId: device.deviceId,
+                    label: device.label || `Camera ${device.deviceId.slice(0, 8)}...`
+                }));
+            setCameraList(videoDevices);
+        } catch (error) {
+            console.error('Failed to get camera list:', error);
         }
     };
 
@@ -105,31 +204,28 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
         }
     }, [debouncedAttendeeId]);
 
-    const stopScanner = () => {
-        if (qrScannerRef.current) {
-            qrScannerRef.current.stop();
-            qrScannerRef.current.destroy();
-            qrScannerRef.current = null;
-        }
-    };
-
     const handleClose = () => {
         stopScanner();
         props.onClose();
     };
 
-    const handleFlashToggle = () => {
+    const handleFlashToggle = async () => {
         if (!isFlashAvailable) {
             showError(t`Flash is not available on this device`);
             return;
         }
-        if (qrScannerRef.current) {
-            if (isFlashOn) {
-                qrScannerRef.current.turnFlashOff();
-            } else {
-                qrScannerRef.current.turnFlashOn();
+        
+        if (streamRef.current) {
+            const videoTrack = streamRef.current.getVideoTracks()[0];
+            try {
+                await videoTrack.applyConstraints({
+                    advanced: [{ torch: !isFlashOn } as any]
+                });
+                setIsFlashOn(!isFlashOn);
+            } catch (error) {
+                console.error('Failed to toggle flash:', error);
+                showError(t`Failed to toggle flash`);
             }
-            setIsFlashOn(!isFlashOn);
         }
     };
 
@@ -143,17 +239,17 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
     };
 
     const updateFlashAvailability = async () => {
-        if (qrScannerRef.current) {
-            const hasFlash = await qrScannerRef.current.hasFlash();
-            setIsFlashAvailable(hasFlash);
+        if (streamRef.current) {
+            const videoTrack = streamRef.current.getVideoTracks()[0];
+            const capabilities = videoTrack.getCapabilities();
+            setIsFlashAvailable(Boolean(capabilities.torch));
         }
     };
 
     useEffect(() => {
         startScanner().then(() => {
             updateFlashAvailability().catch(console.error);
-            QrScanner.listCameras(true)
-                .then(cameras => setCameraList(cameras));
+            getCameraList().catch(console.error);
         });
 
         return () => {
@@ -163,9 +259,15 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
         };
     }, []);
 
-    const handleCameraSelection = (camera: QrScanner.Camera) => () => {
-        return qrScannerRef.current?.setCamera(camera.id)
-            .then(() => updateFlashAvailability().catch(console.error));
+    const handleCameraSelection = (camera: Camera) => async () => {
+        stopScanner();
+        setCurrentDeviceId(camera.deviceId);
+        
+        // Small delay before restarting with new camera
+        setTimeout(async () => {
+            await startScanner();
+            updateFlashAvailability().catch(console.error);
+        }, 100);
     };
 
     return (
@@ -190,6 +292,7 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
             )}
 
             <video className={classes.video} ref={videoRef}></video>
+            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
 
             <Button onClick={handleFlashToggle} variant={'transparent'} className={classes.flashToggle}>
                 {!isFlashAvailable && <IconBulbOff color={'#ffffff95'} size={30}/>}
@@ -212,7 +315,7 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
                     </Menu.Target>
                     <Menu.Dropdown>
                         <Menu.Label>{t`Select Camera`}</Menu.Label>
-                        {cameraList?.map((camera, index) => (
+                        {cameraList.map((camera, index) => (
                             <Menu.Item key={index} onClick={handleCameraSelection(camera)}>
                                 {camera.label}
                             </Menu.Item>
