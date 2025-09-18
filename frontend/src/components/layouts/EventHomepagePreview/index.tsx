@@ -39,6 +39,8 @@ const EventHomepagePreview = () => {
             }}
             backgroundType={updatedSettings?.homepage_background_type || settings.homepage_background_type}
             continueButtonText={updatedSettings?.continue_button_text || settings.continue_button_text}
+            customCss={updatedSettings?.custom_css || settings.custom_css}
+            customJs={updatedSettings?.custom_js || settings.custom_js}
         />
     );
 };

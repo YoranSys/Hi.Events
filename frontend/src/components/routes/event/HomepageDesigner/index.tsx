@@ -8,8 +8,8 @@ import {EventSettings, IdParam} from "../../../../types.ts";
 import {showSuccess} from "../../../../utilites/notifications.tsx";
 import {t} from "@lingui/macro";
 import {useForm} from "@mantine/form";
-import {Button, ColorInput, Group, TextInput, Accordion, Stack, Text} from "@mantine/core";
-import {IconColorPicker, IconHelp, IconPhoto, IconPalette, IconTypography} from "@tabler/icons-react";
+import {Button, ColorInput, Group, TextInput, Accordion, Stack, Text, Textarea} from "@mantine/core";
+import {IconColorPicker, IconHelp, IconPhoto, IconPalette, IconTypography, IconCode} from "@tabler/icons-react";
 import {Tooltip} from "../../../common/Tooltip";
 import {CustomSelect} from "../../../common/CustomSelect";
 import {GET_EVENT_IMAGES_QUERY_KEY, useGetEventImages} from "../../../../queries/useGetEventImages.ts";
@@ -31,7 +31,7 @@ const HomepageDesigner = () => {
     const [iframeSrc, setIframeSrc] = useState<string | null>(null);
     const [iframeLoaded, setIframeLoaded] = useState(false);
     const [lastCoverId, setLastCoverId] = useState<IdParam | null>(null);
-    const [accordionValue, setAccordionValue] = useState<string[]>(['images', 'colors', 'button']);
+    const [accordionValue, setAccordionValue] = useState<string[]>(['images', 'colors', 'button', 'custom']);
 
     const existingCover = eventImagesQuery.data?.find((image) => image.type === 'EVENT_COVER');
 
@@ -45,6 +45,30 @@ const HomepageDesigner = () => {
             homepage_body_background_color: '#fff',
             homepage_background_type: 'COLOR',
             continue_button_text: '',
+            custom_css: '',
+            custom_js: '',
+        },
+        validate: {
+            custom_js: (value) => {
+                if (!value) return null;
+                // Basic check for potentially dangerous patterns
+                const dangerousPatterns = [
+                    /document\.cookie/i,
+                    /localStorage/i,
+                    /sessionStorage/i,
+                    /window\.location/i,
+                    /eval\s*\(/i,
+                    /innerHTML\s*=/i,
+                    /outerHTML\s*=/i,
+                ];
+                
+                for (const pattern of dangerousPatterns) {
+                    if (pattern.test(value)) {
+                        return t`Warning: Your JavaScript contains potentially unsafe code. Please review carefully.`;
+                    }
+                }
+                return null;
+            }
         }
     });
 
@@ -61,6 +85,8 @@ const HomepageDesigner = () => {
                 homepage_body_background_color: eventSettingsQuery.data.homepage_body_background_color || '',
                 homepage_background_type: eventSettingsQuery.data.homepage_background_type || 'COLOR',
                 continue_button_text: eventSettingsQuery.data.continue_button_text,
+                custom_css: eventSettingsQuery.data.custom_css || '',
+                custom_js: eventSettingsQuery.data.custom_js || '',
             });
         }
     }, [eventSettingsQuery.isFetched]);
@@ -257,6 +283,46 @@ const HomepageDesigner = () => {
                                                 size="sm"
                                                 {...form.getInputProps('continue_button_text')} 
                                             />
+                                        </Stack>
+                                    </fieldset>
+                                </form>
+                            </Accordion.Panel>
+                        </Accordion.Item>
+
+                        <Accordion.Item value="custom" className={classes.accordionItem}>
+                            <Accordion.Control icon={<IconCode size={20} />}>
+                                <Text fw={500}>{t`Custom CSS & JavaScript`}</Text>
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                                <form onSubmit={form.onSubmit(handleSubmit as any)}>
+                                    <fieldset disabled={eventSettingsQuery.isLoading || updateMutation.isPending} className={classes.fieldset}>
+                                        <Stack gap="md">
+                                            <Textarea
+                                                label={t`Custom CSS`}
+                                                description={t`Add custom CSS to style your event page`}
+                                                placeholder={t`/* Enter your custom CSS here */\n.my-custom-class {\n  color: #ffffff;\n}`}
+                                                minRows={6}
+                                                maxLength={10000}
+                                                size="sm"
+                                                {...form.getInputProps('custom_css')} 
+                                            />
+                                            <Textarea
+                                                label={t`Custom JavaScript`}
+                                                description={t`Add custom JavaScript to enhance your event page functionality`}
+                                                placeholder={t`// Enter your custom JavaScript here\nconsole.log('My custom script loaded');`}
+                                                minRows={6}
+                                                maxLength={10000}
+                                                size="sm"
+                                                {...form.getInputProps('custom_js')} 
+                                            />
+                                            <div>
+                                                <Text size="xs" c="orange" fw={500}>
+                                                    {t`⚠️ Security Warning`}
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                    {t`Custom code will be executed on your event page. Only add code from trusted sources. Avoid using document.cookie, localStorage, or other potentially unsafe operations.`}
+                                                </Text>
+                                            </div>
                                         </Stack>
                                     </fieldset>
                                 </form>

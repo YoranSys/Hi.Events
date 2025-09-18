@@ -29,6 +29,8 @@ class UpdateEventSettingsDTO extends BaseDTO
         public readonly ?string                 $homepage_secondary_text_color,
         public readonly ?string                 $homepage_body_background_color,
         public readonly ?HomepageBackgroundType $homepage_background_type,
+        public readonly ?string                 $custom_css,
+        public readonly ?string                 $custom_js,
 
         public readonly bool                    $require_attendee_details,
         public readonly int                     $order_timeout_in_minutes,
@@ -91,6 +93,8 @@ class UpdateEventSettingsDTO extends BaseDTO
             homepage_secondary_text_color: '#ffffff',
             homepage_body_background_color: '#7a5eb9',
             homepage_background_type: HomepageBackgroundType::COLOR,
+            custom_css: null,
+            custom_js: null,
             require_attendee_details: false,
             order_timeout_in_minutes: 0,
             website_url: null,

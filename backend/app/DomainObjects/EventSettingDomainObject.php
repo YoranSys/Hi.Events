@@ -41,4 +41,14 @@ HTML;
             country: $this->getLocationDetails()['country'] ?? null,
         );
     }
+
+    public function getCustomCss(): ?string
+    {
+        return $this->custom_css ?? null;
+    }
+
+    public function getCustomJs(): ?string
+    {
+        return $this->custom_js ?? null;
+    }
 }

@@ -18,6 +18,8 @@ export const PublicEvent = () => {
                 promoCodeValid={promoCodeValid}
                 promoCode={promoCode}
                 backgroundType={event?.settings?.homepage_background_type}
+                customCss={event?.settings?.custom_css}
+                customJs={event?.settings?.custom_js}
             />
         </>
     );

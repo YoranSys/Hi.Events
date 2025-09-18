@@ -147,6 +147,8 @@ export interface EventSettings {
     homepage_secondary_text_color: string;
     homepage_body_background_color: string;
     homepage_background_type: 'COLOR' | 'MIRROR_COVER_IMAGE';
+    custom_css?: string;
+    custom_js?: string;
     location_details?: VenueAddress;
     is_online_event?: boolean;
     online_event_connection_details?: string;
