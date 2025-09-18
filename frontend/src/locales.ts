@@ -60,6 +60,10 @@ export async function dynamicActivateLocale(locale: string) {
         const module = (await import(`./locales/${locale}.po`));
         i18n.load(locale, module.messages);
         i18n.activate(locale);
+        
+        // Also set dayjs locale to match the activated locale
+        const {setDayjsLocale} = await import("./utilites/dates.ts");
+        setDayjsLocale();
 }
 
 export const getSupportedLocale = (userLocale: string) => {
