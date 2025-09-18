@@ -81,7 +81,7 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
             }
         } catch (error) {
             setPermissionDenied(true);
-            console.error('Camera access error:', error);
+            console.error(error);
         }
     };
 
@@ -121,7 +121,7 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
                 }
             } catch (error) {
                 // Ignore scanning errors and continue
-                console.debug('Scan error:', error);
+                console.debug(error);
             }
             
             // Continue scanning
@@ -155,11 +155,11 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
                 .filter(device => device.kind === 'videoinput')
                 .map(device => ({
                     deviceId: device.deviceId,
-                    label: device.label || `Camera ${device.deviceId.slice(0, 8)}...`
+                    label: device.label || `Camera ${device.deviceId.slice(0, 8)}`
                 }));
             setCameraList(videoDevices);
         } catch (error) {
-            console.error('Failed to get camera list:', error);
+            console.error(error);
         }
     };
 
@@ -219,11 +219,11 @@ export const QRScannerComponent = (props: QRScannerComponentProps) => {
             const videoTrack = streamRef.current.getVideoTracks()[0];
             try {
                 await videoTrack.applyConstraints({
-                    advanced: [{ torch: !isFlashOn } as any]
-                });
+                    advanced: [{ torch: !isFlashOn }]
+                } as MediaStreamConstraints);
                 setIsFlashOn(!isFlashOn);
             } catch (error) {
-                console.error('Failed to toggle flash:', error);
+                console.error(error);
                 showError(t`Failed to toggle flash`);
             }
         }
