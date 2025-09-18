@@ -44,11 +44,11 @@ HTML;
 
     public function getCustomCss(): ?string
     {
-        return $this->getAttribute('custom_css');
+        return $this->custom_css ?? null;
     }
 
     public function getCustomJs(): ?string
     {
-        return $this->getAttribute('custom_js');
+        return $this->custom_js ?? null;
     }
 }
